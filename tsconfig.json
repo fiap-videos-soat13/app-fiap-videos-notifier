@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "target": "ES2023",
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["node", "jest"],
+    "paths": {
+      "@core/*": ["src/core/*"],
+      "@domain/*": ["src/core/domain/*"],
+      "@application/*": ["src/core/application/*"],
+      "@adapter/*": ["src/adapter/*"],
+      "@validators/*": ["src/core/domain/validators/*"],
+      "@use-cases/*": ["src/core/application/use-cases/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}

@@ -1,0 +1,1 @@
+export { processedEvents } from './processedEvents';
