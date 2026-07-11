@@ -75,7 +75,7 @@ export class NotifierMetricsService {
     });
   }
 
-  recordEmailSent(type: 'completed' | 'failed'): void {
+  recordEmailSent(type: 'pending' | 'completed' | 'failed'): void {
     this.emailsSent.inc({ type });
   }
 }

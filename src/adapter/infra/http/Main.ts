@@ -4,9 +4,10 @@ import { runMigrations, closeDb } from '@adapter/infra/database/client';
 
 async function bootstrap(): Promise<void> {
   await runMigrations();
-  const { app, amqp, completedSubscriber, failedSubscriber } =
+  const { app, amqp, requestedSubscriber, completedSubscriber, failedSubscriber } =
     buildNotifier();
   await amqp.connect();
+  await requestedSubscriber.start();
   await completedSubscriber.start();
   await failedSubscriber.start();
 
@@ -19,6 +20,7 @@ async function bootstrap(): Promise<void> {
   });
 
   const shutdown = async (): Promise<void> => {
+    await requestedSubscriber.stop();
     await completedSubscriber.stop();
     await failedSubscriber.stop();
     server.close();

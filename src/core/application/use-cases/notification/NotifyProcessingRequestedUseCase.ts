@@ -1,7 +1,7 @@
 import { EmailService, LoggerService } from '@domain/services/NotifierServices';
 import { buildVideoJobStatusUrl } from '@domain/services/StatusUrlService';
 
-export class NotifyProcessingCompletedUseCase {
+export class NotifyProcessingRequestedUseCase {
   constructor(
     private readonly email: EmailService,
     private readonly logger: LoggerService,
@@ -14,14 +14,14 @@ export class NotifyProcessingCompletedUseCase {
   }): Promise<void> {
     const statusUrl = buildVideoJobStatusUrl(input.videoJobId);
 
-    await this.email.sendProcessingCompletedEmail({
+    await this.email.sendProcessingRequestedEmail({
       to: input.userEmail,
       videoJobId: input.videoJobId,
       originalFileName: input.originalFileName,
       statusUrl,
     });
 
-    this.logger.log('Notificação de sucesso enviada', {
+    this.logger.log('Notificação de upload pendente enviada', {
       videoJobId: input.videoJobId,
       to: input.userEmail,
     });

@@ -2,12 +2,14 @@ import express from 'express';
 import { Registry, collectDefaultMetrics } from 'prom-client';
 import { NotifyProcessingFailedUseCase } from '@use-cases/notification/NotifyProcessingFailedUseCase';
 import { NotifyProcessingCompletedUseCase } from '@use-cases/notification/NotifyProcessingCompletedUseCase';
+import { NotifyProcessingRequestedUseCase } from '@use-cases/notification/NotifyProcessingRequestedUseCase';
 import { NodemailerEmailService } from '@adapter/infra/services/NodemailerEmailService';
 import { ConsoleLoggerService } from '@adapter/infra/services/ConsoleLoggerService';
 import { AmqpConnection } from '@adapter/infra/messaging/amqp/AmqpConnection';
 import { Inbox } from '@adapter/infra/messaging/inbox/Inbox';
 import { VideoProcessingFailedSubscriber } from '@adapter/infra/messaging/subscribers/VideoProcessingFailedSubscriber';
 import { VideoProcessingCompletedSubscriber } from '@adapter/infra/messaging/subscribers/VideoProcessingCompletedSubscriber';
+import { VideoProcessingRequestedSubscriber } from '@adapter/infra/messaging/subscribers/VideoProcessingRequestedSubscriber';
 import { checkDatabaseConnectivity } from '@adapter/infra/database/client';
 import {
   SagaMetricsService,
@@ -26,6 +28,7 @@ import {
 export type NotifierContext = {
   app: express.Express;
   amqp: AmqpConnection;
+  requestedSubscriber: VideoProcessingRequestedSubscriber;
   completedSubscriber: VideoProcessingCompletedSubscriber;
   failedSubscriber: VideoProcessingFailedSubscriber;
 };
@@ -39,6 +42,7 @@ export function buildNotifier(): NotifierContext {
   const notifierMetrics = new NotifierMetricsService(registry);
 
   const email = new NodemailerEmailService();
+  const notifyRequested = new NotifyProcessingRequestedUseCase(email, logger);
   const notifyFailed = new NotifyProcessingFailedUseCase(email, logger);
   const notifyCompleted = new NotifyProcessingCompletedUseCase(email, logger);
 
@@ -53,6 +57,13 @@ export function buildNotifier(): NotifierContext {
     process.env.RABBITMQ_CONNECTION_NAME?.trim() || 'notifier',
   );
   const inbox = new Inbox(logger, sagaMetrics);
+  const requestedSubscriber = new VideoProcessingRequestedSubscriber(
+    amqp,
+    inbox,
+    logger,
+    notifyRequested,
+    notifierMetrics,
+  );
   const completedSubscriber = new VideoProcessingCompletedSubscriber(
     amqp,
     inbox,
@@ -73,7 +84,7 @@ export function buildNotifier(): NotifierContext {
   const openApi = createOpsOpenApiDocument({
     title: 'FIAP Videos Notifier',
     description:
-      'Envia e-mail em VideoProcessingCompleted e VideoProcessingFailed.',
+      'Envia e-mail em VideoProcessingRequested, VideoProcessingCompleted e VideoProcessingFailed.',
     port,
   });
   setupOpsSwagger(app, openApi);
@@ -97,5 +108,5 @@ export function buildNotifier(): NotifierContext {
     ).catch(next);
   });
 
-  return { app, amqp, completedSubscriber, failedSubscriber };
+  return { app, amqp, requestedSubscriber, completedSubscriber, failedSubscriber };
 }
