@@ -1,0 +1,90 @@
+# Docker Compose for app-fiap-videos-notifier (isolated local development)
+# Usage:
+#   1. Start shared RabbitMQ: cd ../app-fiap-videos-infra/docker && docker compose up rabbitmq -d
+#   2. docker compose up -d --build
+#
+# For end-to-end e-mail flows, use ../app-fiap-videos-infra/docker/docker-compose.yml.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fiap-videos-notifier-pg
+    ports:
+      - '5436:5432'
+    environment:
+      POSTGRES_USER: fiap
+      POSTGRES_PASSWORD: fiap
+      POSTGRES_DB: fiap_videos_notifier
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U fiap -d fiap_videos_notifier']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - notifier-network
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: fiap-videos-notifier-mailhog
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    networks:
+      - notifier-network
+
+  notifier:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fiap-videos-notifier
+    ports:
+      - '3002:3002'
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: 3002
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      DATABASE_URL: postgresql://fiap:fiap@postgres:5432/fiap_videos_notifier
+      RABBITMQ_URL: amqp://fiap:fiap@host.docker.internal:5673/
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@fiap-videos.local
+      APP_STATUS_URL: http://localhost:3000
+      VIDEO_EVENTS_EXCHANGE: fiap-videos.events
+      VIDEO_EVENTS_DLX: fiap-videos.events.dlx
+      RABBITMQ_CONNECTION_NAME: notifier
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://127.0.0.1:3002/health/live',
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - notifier-network
+
+volumes:
+  pgdata:
+
+networks:
+  notifier-network:
+    driver: bridge
