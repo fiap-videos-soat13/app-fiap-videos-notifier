@@ -25,7 +25,7 @@ MailHog UI: http://localhost:8025
 docker compose up --build
 ```
 
-Starts notifier + Postgres (`:5436`) + RabbitMQ (`:5675`) + MailHog (`:8025`).
+Starts notifier + Postgres (`:5432`) + MailHog (`:8025`). Requires shared RabbitMQ from infra (`docker compose up rabbitmq -d` in `app-fiap-videos-infra/docker`).
 
 ### Development server (`yarn start:dev`)
 
@@ -52,7 +52,7 @@ yarn db:migrate
 yarn start:dev
 ```
 
-Ensure `.env` uses `localhost` ports (`5436` for service-owned Postgres, or `5433` with shared infra), `5673`, `1025`. E-mails: http://localhost:8025
+Ensure `.env` uses `localhost:5432` for Postgres, `5673` for RabbitMQ, and `1025` for SMTP. E-mails: http://localhost:8025
 
 `yarn start:dev` runs `prestart:dev`, which starts this service's Postgres container (`fiap_videos_notifier` is created automatically on first boot).
 
@@ -82,8 +82,15 @@ See [`.env.example`](./.env.example). Key vars: `DATABASE_URL`, `RABBITMQ_URL`, 
 yarn lint:ci
 yarn typecheck
 yarn test:unit
+yarn test:cov
 yarn build
 ```
+
+GitHub Actions runs `build`, `lint`, `type-check`, `test-unit`, `security-audit`, and a `ci-success` gate on every push and pull request to `main`.
+
+## Infrastructure
+
+Local Docker Compose, Prometheus, Grafana, and Kubernetes drafts live in [`app-fiap-videos-infra`](../app-fiap-videos-infra).
 
 ## Architecture
 
