@@ -83,10 +83,25 @@ yarn lint:ci
 yarn typecheck
 yarn test:unit
 yarn test:cov
+yarn test:integration       # requires Postgres (see script below)
 yarn build
 ```
 
-GitHub Actions runs `build`, `lint`, `type-check`, `test-unit`, `security-audit`, and a `ci-success` gate on every push and pull request to `main`.
+Run integration tests with a temporary Postgres container:
+
+```bash
+./scripts/run-integration-tests.sh
+```
+
+Or with your own database:
+
+```bash
+export DATABASE_URL=postgresql://fiap:fiap@localhost:5434/fiap_videos_notifier_test
+yarn db:migrate
+yarn test:integration
+```
+
+GitHub Actions runs `build`, `lint`, `type-check`, `test-unit`, `test-integration`, `security-audit`, and a `ci-success` gate on every push and pull request to `main`.
 
 ## Infrastructure
 
