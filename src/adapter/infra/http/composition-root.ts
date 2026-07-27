@@ -4,7 +4,7 @@ import { NotifyProcessingFailedUseCase } from '@use-cases/notification/NotifyPro
 import { NotifyProcessingCompletedUseCase } from '@use-cases/notification/NotifyProcessingCompletedUseCase';
 import { NotifyProcessingRequestedUseCase } from '@use-cases/notification/NotifyProcessingRequestedUseCase';
 import { NodemailerEmailService } from '@adapter/infra/services/NodemailerEmailService';
-import { ConsoleLoggerService } from '@adapter/infra/services/ConsoleLoggerService';
+import { createLogger } from '@adapter/infra/logging/loggerFactory';
 import { AmqpConnection } from '@adapter/infra/messaging/amqp/AmqpConnection';
 import { Inbox } from '@adapter/infra/messaging/inbox/Inbox';
 import { VideoProcessingFailedSubscriber } from '@adapter/infra/messaging/subscribers/VideoProcessingFailedSubscriber';
@@ -34,7 +34,7 @@ export type NotifierContext = {
 };
 
 export function buildNotifier(): NotifierContext {
-  const logger = new ConsoleLoggerService('app-fiap-videos-notifier');
+  const logger = createLogger('app-fiap-videos-notifier');
   const registry = new Registry();
   collectDefaultMetrics({ register: registry });
   const httpMetrics = registerHttpMetrics(registry);
