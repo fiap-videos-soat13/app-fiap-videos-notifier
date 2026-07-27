@@ -165,6 +165,8 @@ yarn db:migrate
 yarn test:integration
 ```
 
+> Dev Compose uses Postgres on port `5432`. Integration tests default to port `5434` so they do not clash with a running dev database. See [app-fiap-videos-infra/README-database.md](../app-fiap-videos-infra/README-database.md).
+
 GitHub Actions runs `build`, `lint`, `type-check`, `test-unit`, `test-integration`, `security-audit`, and a `ci-success` gate on every push and pull request to `main`.
 
 ## Infrastructure
