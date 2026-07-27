@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { Inbox } from '../Inbox';
-import { ConsoleLoggerService } from '@adapter/infra/services/ConsoleLoggerService';
+import { createLogger } from '@adapter/infra/logging/loggerFactory';
 import { getDb } from '@adapter/infra/database/client';
 import { processedEvents } from '@adapter/infra/database/schema';
 import { VideoEventType } from '@validators/VideoEventEnvelopeValidator';
@@ -35,7 +35,7 @@ async function countRows(eventId: string): Promise<number> {
 }
 
 describe('Inbox integration', () => {
-  const inbox = new Inbox(new ConsoleLoggerService());
+  const inbox = new Inbox(createLogger('inbox-integration-test'));
 
   it('handles an event the first time and records it', async () => {
     const envelope = buildEnvelope();

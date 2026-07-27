@@ -13,7 +13,7 @@ describe('Notifier use cases', () => {
       sendProcessingCompletedEmail: jest.fn().mockResolvedValue(undefined),
       sendProcessingFailedEmail: jest.fn().mockResolvedValue(undefined),
     };
-    logger = { log: jest.fn(), error: jest.fn() };
+    logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
   });
 
   describe('NotifyProcessingRequestedUseCase', () => {

@@ -7,7 +7,7 @@ import { Inbox } from '../inbox/Inbox';
 import { BaseEventSubscriber } from './BaseEventSubscriber';
 import { SubscribersConfig } from './subscribersConfig';
 import { NotifyProcessingRequestedUseCase } from '@use-cases/notification/NotifyProcessingRequestedUseCase';
-import { ConsoleLoggerService } from '@adapter/infra/services/ConsoleLoggerService';
+import type { LoggerPort } from '@domain/outboundPorts/LoggerPort';
 import type { NotifierMetricsService } from '@adapter/infra/observability/MetricsServices';
 import type { z } from 'zod';
 
@@ -17,7 +17,7 @@ export class VideoProcessingRequestedSubscriber extends BaseEventSubscriber<Requ
   constructor(
     connection: AmqpConnection,
     inbox: Inbox,
-    logger: ConsoleLoggerService,
+    logger: LoggerPort,
     private readonly notify: NotifyProcessingRequestedUseCase,
     private readonly metrics: NotifierMetricsService,
   ) {
