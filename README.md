@@ -8,6 +8,70 @@ Async worker service: sends e-mail notifications in response to video processing
 - On `VideoProcessingCompleted` — success e-mail with download link
 - On `VideoProcessingFailed` — failure e-mail with error details
 
+## Architecture
+
+### Role in the platform
+
+The notifier is an **async worker** for side-effect delivery only. It listens for processing events and sends transactional e-mails — no outbox, no object storage.
+
+```mermaid
+graph LR
+    RMQ["RabbitMQ"]
+    Notifier["Notifier :3002"]
+    PG[("fiap_videos_notifier")]
+    SMTP["SMTP / MailHog"]
+
+    RMQ -- "Requested / Completed / Failed" --> Notifier
+    Notifier --> PG
+    Notifier --> SMTP
+```
+
+### Notification flow
+
+| Event | E-mail |
+|-------|--------|
+| `VideoProcessingRequested` | Acknowledgement with status page link |
+| `VideoProcessingCompleted` | Success with download link |
+| `VideoProcessingFailed` | Failure with error details |
+
+Each handler uses the **inbox** (`processed_events`) so duplicate events do not send duplicate e-mails. Status and download URLs are built from `APP_STATUS_URL`.
+
+### Hexagonal layout
+
+```
+src/
+├── core/
+│   ├── domain/          # Ports, StatusUrlService, envelope validators
+│   └── application/     # NotifyProcessing* use cases
+└── adapter/
+    └── infra/           # Drizzle inbox, RabbitMQ subscribers, Nodemailer, health/metrics
+```
+
+Wiring: `src/adapter/infra/http/composition-root.ts`.
+
+### Database (`fiap_videos_notifier`)
+
+| Table | Purpose |
+|-------|---------|
+| `processed_events` | Inbox deduplication only |
+
+### Messaging
+
+Exchange: `fiap-videos.events` (topic). Queue pattern: `fiap-videos.notifier.{eventType}`.
+
+| Direction | Events |
+|-----------|--------|
+| Consumes | `VideoProcessingRequested`, `VideoProcessingCompleted`, `VideoProcessingFailed` |
+| Publishes | — |
+
+### Dependencies
+
+| Dependency | Usage |
+|------------|-------|
+| PostgreSQL | Inbox (`processed_events`) |
+| RabbitMQ | Event bus |
+| SMTP | E-mail delivery (MailHog locally, SES or other in production) |
+
 ## Run locally
 
 ### Full stack
@@ -101,13 +165,10 @@ yarn db:migrate
 yarn test:integration
 ```
 
+> Dev Compose uses Postgres on port `5432`. Integration tests default to port `5434` so they do not clash with a running dev database. See [app-fiap-videos-infra/README-database.md](../app-fiap-videos-infra/README-database.md).
+
 GitHub Actions runs `build`, `lint`, `type-check`, `test-unit`, `test-integration`, `security-audit`, and a `ci-success` gate on every push and pull request to `main`.
 
 ## Infrastructure
 
-Local Docker Compose, Prometheus, Grafana, and Kubernetes drafts live in [`app-fiap-videos-infra`](../app-fiap-videos-infra).
-
-## Architecture
-
-Hexagonal layout under `src/` — notification use cases in `core/application`, Nodemailer adapter in `adapter/infra`.  
-Wiring in `src/adapter/infra/http/composition-root.ts`.
+Local Docker Compose, Prometheus, Grafana, and Kubernetes manifests live in [`app-fiap-videos-infra`](../app-fiap-videos-infra).
